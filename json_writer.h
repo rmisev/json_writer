@@ -3,13 +3,14 @@
 
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
 #include <ostream>
 #include <type_traits>
 
 
 class json_writer {
 public:
-	json_writer(std::ostream& sout);
+	json_writer(std::ostream& sout, int indent = 0);
 
 	// object start / end
 	void array_start();
@@ -30,8 +31,9 @@ public:
 	// numbers
 	template<class T, typename = std::enable_if<std::is_integral<T>::value>::type>
 	inline void value(T n) {
-		value_sep_set();
+		value_sep();
 		sout_ << n;
+		sep_status_ = SepStatus::next;
 	}
 
 	// string support
@@ -46,13 +48,20 @@ public:
 
 protected:
 	void value_sep();
-	void value_sep_set();
+	void indent();
 
 	void write_string(const char* first, const char* last);
 	
 private:
+	enum class SepStatus {
+		none,
+		first,
+		next
+	};
 	std::ostream& sout_;
-	bool need_value_sep_;
+	const int indent_;
+	int level_;
+	SepStatus sep_status_;
 };
 
 // json_writer inline
@@ -63,14 +72,16 @@ static const char cObjStart = '{';
 static const char cObjEnd   = '}';
 static const char cArrStart = '[';
 static const char cArrEnd   = ']';
-static const char cNameSep  = ':';
+static const char sNameSep[]  = ": ";
 static const char cValueSep = ',';
 
 }
 
-inline json_writer::json_writer(std::ostream& sout)
+inline json_writer::json_writer(std::ostream& sout, int indent)
 	: sout_(sout)
-	, need_value_sep_(false)
+	, indent_(indent)
+	, level_(0)
+	, sep_status_(SepStatus::none)
 {}
 
 // object start / end
@@ -78,23 +89,29 @@ inline json_writer::json_writer(std::ostream& sout)
 inline void json_writer::array_start() {
 	value_sep();
 	sout_ << cArrStart;
-	need_value_sep_ = false;
+	sep_status_ = SepStatus::first;
+	level_++;
 }
 
 inline void json_writer::array_end() {
+	level_--;
+	indent();
 	sout_ << cArrEnd;
-	need_value_sep_ = true;
+	sep_status_ = SepStatus::next;
 }
 
 inline void json_writer::object_start() {
 	value_sep();
 	sout_ << cObjStart;
-	need_value_sep_ = false;
+	sep_status_ = SepStatus::first;
+	level_++;
 }
 
 inline void json_writer::object_end() {
+	level_--;
+	indent();
 	sout_ << cObjEnd;
-	need_value_sep_ = true;	
+	sep_status_ = SepStatus::next;
 }
 
 // write name
@@ -102,8 +119,8 @@ inline void json_writer::object_end() {
 inline void json_writer::name(const char* first, const char* last) {
 	value_sep();
 	write_string(first, last);
-	sout_ << cNameSep;	
-	need_value_sep_ = false;
+	sout_.write(sNameSep, indent_ ? 2 : 1);
+	sep_status_ = SepStatus::none;
 }
 
 inline void json_writer::name(const char* strz) {
@@ -113,8 +130,9 @@ inline void json_writer::name(const char* strz) {
 // write value
 
 inline void json_writer::value(const char* first, const char* last) {
-	value_sep_set();
+	value_sep();
 	write_string(first, last);
+	sep_status_ = SepStatus::next;
 }
 
 inline void json_writer::value(const char* strz) {
@@ -122,27 +140,30 @@ inline void json_writer::value(const char* strz) {
 }
 
 inline void json_writer::value_bool(bool b) {
-	value_sep_set();
+	value_sep();
 	sout_ << (b ? "true" : "false");
+	sep_status_ = SepStatus::next;
 }
 
 inline void json_writer::value_null() {
-	value_sep_set();
+	value_sep();
 	sout_ << "null";
+	sep_status_ = SepStatus::next;
 }
 
 // write value separator
 
 inline void json_writer::value_sep() {
-	if (need_value_sep_)
+	if (sep_status_ == SepStatus::next)
 		sout_ << cValueSep;
+	indent();
 }
 
-inline void json_writer::value_sep_set() {
-	if (need_value_sep_)
-		sout_ << cValueSep;
-	else
-		need_value_sep_ = true;
+// EOL and indent
+
+inline void json_writer::indent() {
+	if (indent_ && sep_status_ != SepStatus::none)
+		sout_ << '\n' << std::setw(level_ * indent_) << "";
 }
 
 // write string

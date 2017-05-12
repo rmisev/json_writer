@@ -174,8 +174,7 @@ static const char cQuote        = '\"';
 static const char cBackslash    = '\\';
 static const char sUnicodeEsc[] = { '\\', 'u', '0', '0' };
 
-static inline char num_to_hex(int n)
-{
+static inline char num_to_hex(int n) {
 	static const char sHex[] = { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
 	return sHex[n];
 }
@@ -187,8 +186,7 @@ inline void json_writer::write_string(const char* first, const char* last)
 	sout_ << cQuote;
 
 	const char* start = first;
-	for (const char* ps = first; ps != last; ps++)
-	{
+	for (const char* ps = first; ps != last; ps++) {
 		const unsigned char c = static_cast<unsigned char>(*ps);
 		
 		if (c == cQuote || c == cBackslash) {	

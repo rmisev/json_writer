@@ -189,7 +189,7 @@ inline void json_writer::write_string(const char* first, const char* last)
 	const char* start = first;
 	for (const char* ps = first; ps != last; ps++)
 	{
-		const char c = *ps;
+		const unsigned char c = static_cast<unsigned char>(*ps);
 		
 		if (c == cQuote || c == cBackslash) {	
 			sout_.write(start, ps - start);

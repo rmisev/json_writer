@@ -29,7 +29,7 @@ public:
 	void value_null();
 
 	// numbers
-	template<class T, typename = std::enable_if<std::is_integral<T>::value>::type>
+	template<class T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
 	inline void value(T n) {
 		value_sep();
 		sout_ << n;
@@ -37,11 +37,11 @@ public:
 	}
 
 	// string support
-	template <class StringT, typename = std::enable_if<std::is_class<StringT>::value>::type>
+	template <class StringT, typename = typename std::enable_if<std::is_class<StringT>::value>::type>
 	void name(const StringT& str) {
 		name(str.data(), str.data() + str.size());
 	}
-	template <class StringT, typename = std::enable_if<std::is_class<StringT>::value>::type>
+	template <class StringT, typename = typename std::enable_if<std::is_class<StringT>::value>::type>
 	void value(const StringT& str) {
 		value(str.data(), str.data() + str.size());
 	}
